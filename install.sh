@@ -26,7 +26,8 @@ if [ -f "${WAYBAR_CONFIG_DIR}/UserModules" ]; then
 //* ---- VietKeyra Waybar Module ---- *//
 {
 "custom/vietkeyra": {
-    "format": "{}",
+    "format": "  {}",
+    "return-type": "json",
     "exec": "vietkeyra-ctl waybar",
     "on-click": "vietkeyra-ctl toggle",
     "restart-interval": 1,

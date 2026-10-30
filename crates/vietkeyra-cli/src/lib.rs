@@ -236,6 +236,10 @@ pub fn run(cli: Cli) -> Result<(), i32> {
                 }
             };
 
+            let _ = std::process::Command::new("pkill")
+                .args(["-RTMIN+8", "waybar"])
+                .status();
+
             let status: Result<DaemonStatus, _> = serde_json::from_str(&resp);
             match status {
                 Ok(s) => {
@@ -262,6 +266,10 @@ pub fn run(cli: Cli) -> Result<(), i32> {
                     return Err(1);
                 }
             };
+
+            let _ = std::process::Command::new("pkill")
+                .args(["-RTMIN+8", "waybar"])
+                .status();
 
             let status: Result<DaemonStatus, _> = serde_json::from_str(&resp);
             match status {

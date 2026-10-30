@@ -3,7 +3,7 @@ use crate::state::{IpcToWayland, SharedDaemonState, WaylandToIpc};
 use std::os::fd::AsFd;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
-use vietkeyra_engine::{KeyAction, VietKeyraEngine};
+use vietkeyra_engine::VietKeyraEngine;
 use wayland_client::protocol::wl_keyboard::KeyState;
 use wayland_client::protocol::wl_registry::{self, WlRegistry};
 use wayland_client::protocol::wl_seat::{self, WlSeat};
@@ -86,21 +86,54 @@ impl WaylandState {
         }
     }
 
+    /// Commits and clears any active preedit buffer if present.
+    pub fn flush_preedit(&mut self) {
+        if !self.engine.is_empty() {
+            if let Some(ref im) = self.im {
+                let word = self.engine.current_word().to_string();
+                im.set_preedit_string(String::new(), 0, 0);
+                im.commit_string(word);
+                im.commit(self.serial);
+            }
+            self.engine.reset_word();
+        }
+    }
+
+    /// Discards any active preedit buffer without committing.
+    pub fn cancel_preedit(&mut self) {
+        if !self.engine.is_empty() {
+            if let Some(ref im) = self.im {
+                im.set_preedit_string(String::new(), 0, 0);
+                im.commit(self.serial);
+            }
+            self.engine.reset_word();
+        }
+    }
+
     /// Synchronizes pending state from IPC thread (mode or style changes).
     pub fn drain_ipc_events(&mut self) {
+        let mut messages = Vec::new();
         if let Ok(rx) = self.rx_from_ipc.lock() {
             while let Ok(msg) = rx.try_recv() {
-                match msg {
-                    IpcToWayland::SetMode(mode) => {
+                messages.push(msg);
+            }
+        }
+
+        for msg in messages {
+            match msg {
+                IpcToWayland::SetMode(mode) => {
+                    if mode != self.engine.get_mode() {
+                        self.flush_preedit();
                         self.engine.set_mode(mode);
                     }
-                    IpcToWayland::ToggleMode => {
-                        let new_mode = self.engine.toggle_mode();
-                        let _ = self.tx_to_ipc.send(WaylandToIpc::ModeChanged(new_mode));
-                    }
-                    IpcToWayland::SetStyle(style) => {
-                        self.engine.set_style(style);
-                    }
+                }
+                IpcToWayland::ToggleMode => {
+                    self.flush_preedit();
+                    let new_mode = self.engine.toggle_mode();
+                    let _ = self.tx_to_ipc.send(WaylandToIpc::ModeChanged(new_mode));
+                }
+                IpcToWayland::SetStyle(style) => {
+                    self.engine.set_style(style);
                 }
             }
         }
@@ -209,9 +242,9 @@ impl Dispatch<ZwpInputMethodV2, ()> for WaylandState {
             }
 
             zwp_input_method_v2::Event::Deactivate => {
-                // Focus shifted away: immediately flush word buffer to prevent state leaking
+                // Focus shifted away: immediately flush preedit buffer to prevent state leaking
+                state.flush_preedit();
                 state.active = false;
-                state.engine.reset_word();
                 state.has_surrounding_text = false;
                 state.surrounding_text.clear();
             }
@@ -357,8 +390,8 @@ impl Dispatch<ZwpInputMethodKeyboardGrabV2, ()> for WaylandState {
                 };
 
                 if ctrl || alt || logo {
-                    // Shortcut key chord bypasses Telex diacritics
-                    state.engine.reset_word();
+                    // Shortcut key chord: flush active preedit and forward key
+                    state.flush_preedit();
                     if let Some(ref vk) = state.vk {
                         vk.forward_key(time, key, 1);
                     }
@@ -367,6 +400,7 @@ impl Dispatch<ZwpInputMethodKeyboardGrabV2, ()> for WaylandState {
 
                 // English mode bypasses Telex diacritics
                 if state.engine.get_mode().is_english() {
+                    state.flush_preedit();
                     if let Some(ref vk) = state.vk {
                         vk.forward_key(time, key, 1);
                     }
@@ -387,28 +421,21 @@ impl Dispatch<ZwpInputMethodKeyboardGrabV2, ()> for WaylandState {
 
                 // Handle BackSpace
                 if sym_raw == xkb::keysyms::KEY_BackSpace {
-                    match state.engine.handle_backspace() {
-                        KeyAction::Replace {
-                            delete_bytes, text, ..
-                        } => {
-                            if let Some(ref im) = state.im {
-                                if delete_bytes > 0 {
-                                    im.delete_surrounding_text(delete_bytes as u32, 0);
-                                }
-                                if !text.is_empty() {
-                                    im.commit_string(text);
-                                }
-                                im.commit(state.serial);
-                            }
-                            return;
+                    if state.engine.is_empty() {
+                        if let Some(ref vk) = state.vk {
+                            vk.forward_key(time, key, 1);
                         }
-                        KeyAction::PassThrough | KeyAction::Commit { .. } => {
-                            if let Some(ref vk) = state.vk {
-                                vk.forward_key(time, key, 1);
-                            }
-                            return;
-                        }
+                        return;
                     }
+
+                    state.engine.handle_backspace();
+                    if let Some(ref im) = state.im {
+                        let current = state.engine.current_word();
+                        let byte_len = current.len() as i32;
+                        im.set_preedit_string(current.to_string(), byte_len, byte_len);
+                        im.commit(state.serial);
+                    }
+                    return;
                 }
 
                 // Handle Navigation and Control keys (Return, Tab, Escape, Arrows, Home, End, Delete)
@@ -429,7 +456,11 @@ impl Dispatch<ZwpInputMethodKeyboardGrabV2, ()> for WaylandState {
                         | xkb::keysyms::KEY_Delete
                         | xkb::keysyms::KEY_Insert
                 ) {
-                    state.engine.reset_word();
+                    if sym_raw == xkb::keysyms::KEY_Escape {
+                        state.cancel_preedit();
+                    } else {
+                        state.flush_preedit();
+                    }
                     if let Some(ref vk) = state.vk {
                         vk.forward_key(time, key, 1);
                     }
@@ -438,59 +469,50 @@ impl Dispatch<ZwpInputMethodKeyboardGrabV2, ()> for WaylandState {
 
                 // Handle Space: commits word and inserts space
                 if sym_raw == xkb::keysyms::KEY_space {
-                    state.engine.reset_word();
                     if let Some(ref im) = state.im {
-                        im.commit_string(" ".to_string());
+                        let word = state.engine.current_word();
+                        im.set_preedit_string(String::new(), 0, 0);
+                        if !word.is_empty() {
+                            im.commit_string(format!("{word} "));
+                        } else {
+                            im.commit_string(" ".to_string());
+                        }
                         im.commit(state.serial);
                     } else if let Some(ref vk) = state.vk {
                         vk.forward_key(time, key, 1);
                     }
+                    state.engine.reset_word();
                     return;
                 }
 
                 // Handle printable characters
                 if let Some(ch) = utf8_str.chars().next() {
                     if ch.is_alphabetic() {
-                        let action = state.engine.process_char(ch);
-                        match action {
-                            KeyAction::Replace {
-                                delete_bytes, text, ..
-                            } => {
-                                if let Some(ref im) = state.im {
-                                    if delete_bytes > 0 {
-                                        // Strict UTF-8 byte offset deletion
-                                        im.delete_surrounding_text(delete_bytes as u32, 0);
-                                    }
-                                    im.commit_string(text);
-                                    im.commit(state.serial);
-                                } else if let Some(ref vk) = state.vk {
-                                    vk.forward_key(time, key, 1);
-                                }
-                            }
-                            KeyAction::Commit { text } => {
-                                if let Some(ref im) = state.im {
-                                    im.commit_string(text);
-                                    im.commit(state.serial);
-                                } else if let Some(ref vk) = state.vk {
-                                    vk.forward_key(time, key, 1);
-                                }
-                            }
-                            KeyAction::PassThrough => {
-                                if let Some(ref vk) = state.vk {
-                                    vk.forward_key(time, key, 1);
-                                }
-                            }
-                        }
-                        return;
-                    } else if !ch.is_control() {
-                        // Punctuation, digits, symbols: commit character and reset word buffer
-                        state.engine.reset_word();
+                        let _action = state.engine.process_char(ch);
+                        let word = state.engine.current_word();
                         if let Some(ref im) = state.im {
-                            im.commit_string(ch.to_string());
+                            let byte_len = word.len() as i32;
+                            im.set_preedit_string(word.to_string(), byte_len, byte_len);
                             im.commit(state.serial);
                         } else if let Some(ref vk) = state.vk {
                             vk.forward_key(time, key, 1);
                         }
+                        return;
+                    } else if !ch.is_control() {
+                        // Punctuation, digits, symbols: commit preceding word + this character
+                        if let Some(ref im) = state.im {
+                            let word = state.engine.current_word();
+                            im.set_preedit_string(String::new(), 0, 0);
+                            if !word.is_empty() {
+                                im.commit_string(format!("{word}{ch}"));
+                            } else {
+                                im.commit_string(ch.to_string());
+                            }
+                            im.commit(state.serial);
+                        } else if let Some(ref vk) = state.vk {
+                            vk.forward_key(time, key, 1);
+                        }
+                        state.engine.reset_word();
                         return;
                     }
                 }
