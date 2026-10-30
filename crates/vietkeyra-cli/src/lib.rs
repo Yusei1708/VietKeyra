@@ -46,6 +46,12 @@ pub enum Commands {
 
     #[command(about = "Subscribe to live IME events")]
     Monitor,
+
+    #[command(about = "Quit/exit the VietKeyra daemon process")]
+    Quit,
+
+    #[command(about = "Launch or ensure VietKeyra daemon is running (used by desktop launcher)")]
+    Launch,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -97,14 +103,14 @@ pub fn format_waybar(mode: &str) -> WaybarOutput {
         WaybarOutput {
             text: "VI".to_string(),
             alt: "vietnamese".to_string(),
-            tooltip: "VietKeyra: Tiếng Việt (Telex)\n• Chuột trái: Đổi sang Tiếng Anh".to_string(),
+            tooltip: "VietKeyra: Tiếng Việt (Telex)\n• Chuột trái: Đổi sang Tiếng Anh\n• Chuột phải: Thoát VietKeyra".to_string(),
             class: "vi".to_string(),
         }
     } else {
         WaybarOutput {
             text: "EN".to_string(),
             alt: "english".to_string(),
-            tooltip: "VietKeyra: Tiếng Anh (Tắt Telex)\n• Chuột trái: Đổi sang Tiếng Việt".to_string(),
+            tooltip: "VietKeyra: Tiếng Anh (Tắt Telex)\n• Chuột trái: Đổi sang Tiếng Việt\n• Chuột phải: Thoát VietKeyra".to_string(),
             class: "en".to_string(),
         }
     }
@@ -228,13 +234,10 @@ pub fn run(cli: Cli) -> Result<(), i32> {
         }
 
         Commands::Toggle => {
-            let resp = match send_command(&socket_path, "{\"cmd\": \"toggle\"}") {
-                Ok(r) => r,
-                Err(err) => {
-                    eprintln!("{err}");
-                    return Err(1);
-                }
-            };
+            let resp = send_command(&socket_path, "{\"cmd\": \"toggle\"}").map_err(|e| {
+                eprintln!("{e}");
+                1
+            })?;
 
             let _ = std::process::Command::new("pkill")
                 .args(["-RTMIN+8", "waybar"])
@@ -248,6 +251,51 @@ pub fn run(cli: Cli) -> Result<(), i32> {
                 Err(_) => {
                     println!("{resp}");
                 }
+            }
+        }
+
+        Commands::Quit => {
+            // Try graceful IPC quit first
+            let _ = send_command(&socket_path, "{\"cmd\": \"quit\"}");
+            std::thread::sleep(Duration::from_millis(150));
+            // Ensure daemon process is stopped
+            let _ = std::process::Command::new("pkill")
+                .args(["-f", "vietkeyrad"])
+                .status();
+            // Signal Waybar to refresh status immediately
+            let _ = std::process::Command::new("pkill")
+                .args(["-RTMIN+8", "waybar"])
+                .status();
+            // Notification
+            let _ = std::process::Command::new("notify-send")
+                .args(["-a", "VietKeyra", "VietKeyra", "Đã thoát bộ gõ tiếng Việt"])
+                .status();
+            println!("VietKeyra: Đã thoát daemon thành công.");
+        }
+
+        Commands::Launch => {
+            let is_running = send_command(&socket_path, "{\"cmd\": \"get_status\"}").is_ok();
+            if is_running {
+                let _ = send_command(&socket_path, "{\"cmd\": \"set_mode\", \"mode\": \"VI\"}");
+                let _ = std::process::Command::new("pkill")
+                    .args(["-RTMIN+8", "waybar"])
+                    .status();
+                let _ = std::process::Command::new("notify-send")
+                    .args(["-a", "VietKeyra", "VietKeyra", "Bộ gõ tiếng Việt đang hoạt động [Chế độ: VI]"])
+                    .status();
+                println!("VietKeyra: Daemon đang hoạt động [Chế độ: VI]");
+            } else {
+                let _ = std::process::Command::new("sh")
+                    .args(["-c", "nohup vietkeyrad >/dev/null 2>&1 &"])
+                    .spawn();
+                std::thread::sleep(Duration::from_millis(400));
+                let _ = std::process::Command::new("pkill")
+                    .args(["-RTMIN+8", "waybar"])
+                    .status();
+                let _ = std::process::Command::new("notify-send")
+                    .args(["-a", "VietKeyra", "VietKeyra", "Đã khởi động bộ gõ tiếng Việt (Telex)"])
+                    .status();
+                println!("VietKeyra: Đã khởi động daemon");
             }
         }
 

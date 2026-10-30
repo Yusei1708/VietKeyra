@@ -19,7 +19,35 @@ cp -f "${SCRIPT_DIR}/target/release/vietkeyrad" "${BIN_DIR}/vietkeyrad"
 cp -f "${SCRIPT_DIR}/target/release/vietkeyra-ctl" "${BIN_DIR}/vietkeyra-ctl"
 chmod +x "${BIN_DIR}/vietkeyrad" "${BIN_DIR}/vietkeyra-ctl"
 
-echo "=== [3/5] Cấu hình Waybar ==="
+echo "=== [3/6] Cài đặt Desktop Entry & Biểu tượng ứng dụng ==="
+APP_DIR="${HOME}/.local/share/applications"
+ICON_DIR="${HOME}/.local/share/icons/hicolor/128x128/apps"
+SCALABLE_ICON_DIR="${HOME}/.local/share/icons/hicolor/scalable/apps"
+mkdir -p "${APP_DIR}" "${ICON_DIR}" "${SCALABLE_ICON_DIR}" "${HOME}/.local/share/pixmaps" "${HOME}/.local/share/icons"
+
+cp -f "${SCRIPT_DIR}/assets/icons/vietkeyra.png" "${ICON_DIR}/vietkeyra.png"
+cp -f "${SCRIPT_DIR}/assets/icons/vietkeyra.png" "${HOME}/.local/share/pixmaps/vietkeyra.png"
+cp -f "${SCRIPT_DIR}/assets/icons/vietkeyra.png" "${HOME}/.local/share/icons/vietkeyra.png"
+cp -f "${SCRIPT_DIR}/assets/icons/vietkeyra.svg" "${SCALABLE_ICON_DIR}/vietkeyra.svg"
+
+cat << EOF > "${APP_DIR}/vietkeyra.desktop"
+[Desktop Entry]
+Name=VietKeyra
+GenericName=Bộ gõ tiếng Việt
+Comment=Bộ gõ tiếng Việt độc lập 100% cho Linux (Wayland / Hyprland)
+Exec=${BIN_DIR}/vietkeyra-ctl launch
+Icon=vietkeyra
+Terminal=false
+Type=Application
+Categories=Utility;
+Keywords=VietKeyra;Unikey;Vietnamese;Telex;BoGo;IME;
+StartupNotify=false
+EOF
+chmod +x "${APP_DIR}/vietkeyra.desktop"
+update-desktop-database "${APP_DIR}" 2>/dev/null || true
+gtk-update-icon-cache -f -t "${HOME}/.local/share/icons/hicolor" 2>/dev/null || true
+
+echo "=== [4/6] Cấu hình Waybar ==="
 # Cấu hình module trong UserModules
 if [ -f "${WAYBAR_CONFIG_DIR}/UserModules" ]; then
     cat << 'EOF' > "${WAYBAR_CONFIG_DIR}/UserModules"
@@ -30,6 +58,7 @@ if [ -f "${WAYBAR_CONFIG_DIR}/UserModules" ]; then
     "return-type": "json",
     "exec": "$HOME/.local/bin/vietkeyra-ctl waybar",
     "on-click": "$HOME/.local/bin/vietkeyra-ctl toggle",
+    "on-click-right": "$HOME/.local/bin/vietkeyra-ctl quit",
     "restart-interval": 1,
     "signal": 8,
     "tooltip": true
@@ -73,7 +102,7 @@ EOF
     fi
 fi
 
-echo "=== [4/5] Cấu hình tự khởi động cùng phiên Hyprland ==="
+echo "=== [5/6] Cấu hình tự khởi động cùng phiên Hyprland ==="
 if [ -f "${HYPR_CONFIG_DIR}/Startup_Apps.conf" ]; then
     # Tắt fcitx5 để tránh xung đột cổng zwp_input_method_v2
     sed -i 's/^exec-once = fcitx5/#exec-once = fcitx5 # [vietkeyra-replaced]/' "${HYPR_CONFIG_DIR}/Startup_Apps.conf"
@@ -82,7 +111,7 @@ if [ -f "${HYPR_CONFIG_DIR}/Startup_Apps.conf" ]; then
     fi
 fi
 
-echo "=== [5/5] Khởi động VietKeyra Daemon & cập nhật Waybar ==="
+echo "=== [6/6] Khởi động VietKeyra Daemon & cập nhật Waybar ==="
 # Tắt fcitx5 nếu đang chạy để nhường quyền IME
 pkill -f fcitx5 2>/dev/null || true
 # Dừng daemon cũ nếu có
@@ -100,5 +129,7 @@ pkill -RTMIN+8 waybar 2>/dev/null || true
 echo "=========================================================="
 echo "  VietKeyra đã được cài đặt và khởi động thành công!"
 echo "  - Trạng thái mặc định: TIẾNG VIỆT (VI, Telex truyền thống)."
-echo "  - Chuyển đổi EN / VI: Nhấp chuột vào biểu tượng trên Waybar."
+echo "  - Tìm kiếm ứng dụng: 'VietKeyra' trong trình tìm kiếm app."
+echo "  - Chuột trái trên Waybar: Chuyển đổi qua lại EN / VI."
+echo "  - Chuột phải trên Waybar: Thoát VietKeyra."
 echo "=========================================================="

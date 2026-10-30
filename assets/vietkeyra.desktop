@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=VietKeyra
+GenericName=Bộ gõ tiếng Việt
+Comment=Bộ gõ tiếng Việt độc lập 100% cho Linux (Wayland / Hyprland)
+Exec=vietkeyra-ctl launch
+Icon=vietkeyra
+Terminal=false
+Type=Application
+Categories=Utility;
+Keywords=VietKeyra;Unikey;Vietnamese;Telex;BoGo;IME;
+StartupNotify=false

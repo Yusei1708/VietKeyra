@@ -13,6 +13,7 @@ pub enum IpcRequest {
     SetEngine { engine: String },
     ReloadConfig,
     Subscribe,
+    Quit,
 }
 
 /// Outgoing IPC responses from daemon to clients.
@@ -144,6 +145,10 @@ mod tests {
         assert_eq!(
             parse_request("{\"cmd\": \"subscribe\"}").unwrap(),
             IpcRequest::Subscribe
+        );
+        assert_eq!(
+            parse_request("{\"cmd\": \"quit\"}").unwrap(),
+            IpcRequest::Quit
         );
     }
 

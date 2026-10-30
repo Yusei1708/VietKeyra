@@ -41,14 +41,19 @@ Kịch bản sẽ tự động:
 5. Khởi động ngay daemon `vietkeyrad` và làm mới Waybar.
 
 ### 2. Sử dụng
-- Gõ văn bản tiếng Việt theo kiểu Telex chuẩn trong bất kỳ ứng dụng Wayland nào (Chrome, Mousepad, VS Code, v.v.).
-- **Chuyển đổi Tiếng Việt / Tiếng Anh**: Nhấp chuột trái vào chữ **VI** trên thanh Waybar để đổi sang **EN** (hoặc ngược lại).
-- Lệnh điều khiển thủ công từ terminal:
+- **Gõ tiếng Việt Telex**: Gõ văn bản tiếng Việt theo kiểu Telex chuẩn truyền thống trong mọi ứng dụng Wayland (Chrome, Kitty, Alacritty, Mousepad, VS Code, v.v.).
+- **Tìm kiếm ứng dụng (App Launcher / Rofi / Walker)**: Ứng dụng xuất hiện sẵn trong ô tìm kiếm ứng dụng với tên `VietKeyra` và biểu tượng logo riêng. Nhấp chọn để mở và tự động bật chế độ gõ tiếng Việt.
+- **Thanh Waybar**:
+  - **Chuột trái**: Chuyển đổi luân phiên giữa chế độ **VI** (Tiếng Việt) và **EN** (Tiếng Anh).
+  - **Chuột phải**: Thoát hoàn toàn ứng dụng VietKeyra (`vietkeyrad`).
+- **Lệnh điều khiển từ terminal**:
   ```bash
-  vietkeyra-ctl waybar     # Xuất JSON cho Waybar
-  vietkeyra-ctl toggle     # Đổi luân phiên EN / VI
-  vietkeyra-ctl status     # Xem trạng thái hiện tại
-  vietkeyra-ctl set-mode VI # Đặt chế độ cụ thể
+  vietkeyra-ctl waybar      # Xuất JSON trạng thái cho Waybar
+  vietkeyra-ctl toggle      # Đổi luân phiên EN / VI
+  vietkeyra-ctl launch      # Khởi động ứng dụng từ launcher
+  vietkeyra-ctl quit        # Thoát daemon sạch sẽ
+  vietkeyra-ctl status      # Xem thông tin phiên bản & chế độ
+  vietkeyra-ctl set-mode VI # Đặt chế độ trực tiếp (VI hoặc EN)
   ```
 
 ### 3. Gỡ cài đặt

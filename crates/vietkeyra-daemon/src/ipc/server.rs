@@ -131,7 +131,7 @@ pub fn run_ipc_server(
         // B. Accept new incoming client connections
         match listener.accept() {
             Ok((stream, _)) => {
-                handle_incoming_connection(stream, &state, &mut pool, &tx_to_wayland);
+                handle_incoming_connection(stream, &state, &mut pool, &tx_to_wayland, &shutdown);
             }
             Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                 // Sleep briefly to avoid busy loop
@@ -154,6 +154,7 @@ fn handle_incoming_connection(
     state: &Arc<SharedDaemonState>,
     pool: &mut SubscriberPool,
     tx_to_wayland: &Sender<IpcToWayland>,
+    shutdown: &Arc<AtomicBool>,
 ) {
     // Read the first line of the request with timeout
     let _ = stream.set_read_timeout(Some(Duration::from_millis(2000)));
@@ -235,6 +236,14 @@ fn handle_incoming_connection(
             // Remove timeout for subscription streaming
             let _ = stream.set_read_timeout(None);
             pool.add(stream);
+        }
+
+        Ok(IpcRequest::Quit) => {
+            let resp = IpcResponse::ok(state.get_mode_str(), state.engine(), state.version());
+            let _ = stream.write_all(resp.to_json_line().as_bytes());
+            let _ = stream.flush();
+            shutdown.store(true, Ordering::SeqCst);
+            trigger_waybar_signal();
         }
 
         Err(err_resp) => {
