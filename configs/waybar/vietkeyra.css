@@ -1,0 +1,26 @@
+/* VietKeyra Waybar Styling */
+#custom-vietkeyra {
+    padding: 0 10px;
+    margin: 0 4px;
+    border-radius: 12px;
+    font-weight: bold;
+    transition: all 0.2s ease-in-out;
+}
+
+#custom-vietkeyra.vi {
+    color: #a6e3a1; /* Catppuccin Green / Emerald */
+    background-color: rgba(166, 227, 161, 0.12);
+    border: 1px solid rgba(166, 227, 161, 0.3);
+}
+
+#custom-vietkeyra.en {
+    color: #89b4fa; /* Catppuccin Blue / Cyan */
+    background-color: rgba(137, 180, 250, 0.12);
+    border: 1px solid rgba(137, 180, 250, 0.3);
+}
+
+#custom-vietkeyra.disabled {
+    color: #6c7086;
+    background-color: rgba(108, 112, 134, 0.12);
+    border: 1px solid rgba(108, 112, 134, 0.3);
+}

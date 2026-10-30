@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=VietKeyra
+Comment=Bộ gõ tiếng Việt cho Linux
+Exec=vietkeyra-gui
+Icon=input-keyboard
+Terminal=false
+Type=Application
+Categories=Utility;Settings;
+Keywords=vietnamese;telex;keyboard;ime;
+StartupNotify=true
