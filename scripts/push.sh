@@ -6,8 +6,10 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "$PROJECT_ROOT" ]; then
+    PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fi
 
 TOKEN="${1:-${GITHUB_TOKEN:-}}"
 if [ -z "$TOKEN" ]; then
@@ -17,8 +19,9 @@ if [ -z "$TOKEN" ]; then
 fi
 
 # Run secrets check before pushing
-"${SCRIPT_DIR}/check-secrets.sh"
+"${PROJECT_ROOT}/scripts/check-secrets.sh"
 
 echo "🚀 [VIETKEYRA PUSH] Pushing to remote main using ephemeral authorization header..."
-git -C "${PROJECT_ROOT}" -c http.extraHeader="Authorization: token ${TOKEN}" push -u origin main
+B64_AUTH=$(printf "Yusei1708:%s" "$TOKEN" | base64)
+git -C "${PROJECT_ROOT}" -c http.extraHeader="Authorization: Basic ${B64_AUTH}" -c credential.helper="" push -u origin main
 echo "✔ [VIETKEYRA PUSH] Push hoàn tất thành công!"
