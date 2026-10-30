@@ -8,9 +8,9 @@ use crate::nfc::BaseVowel;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TonePlacementStyle {
     /// Modern standard (Quyết định 1989/QĐ-BGDĐT): hoà, thuỷ, khoè.
-    #[default]
     Modern,
     /// Traditional / Classical style: hòa, thủy, khỏe.
+    #[default]
     Traditional,
 }
 

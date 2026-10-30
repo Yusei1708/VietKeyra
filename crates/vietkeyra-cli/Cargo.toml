@@ -12,3 +12,7 @@ serde_json = "1.0"
 libc = "0.2"
 
 [dev-dependencies]
+
+[[bin]]
+name = "vietkeyra-ctl"
+path = "src/main.rs"

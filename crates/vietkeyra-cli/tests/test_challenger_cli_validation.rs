@@ -35,7 +35,6 @@ fn test_challenger_waybar_format_matrix() {
         assert_eq!(wb.alt, "vietnamese", "Failed for variant: {vi_variant}");
         assert!(wb.tooltip.contains("Tiếng Việt (Telex)"));
         assert!(wb.tooltip.contains("Chuột trái: Đổi sang Tiếng Anh"));
-        assert!(wb.tooltip.contains("Chuột phải: Mở Bảng điều khiển"));
     }
 
     // Test all valid variants of EN and unexpected input
@@ -46,7 +45,6 @@ fn test_challenger_waybar_format_matrix() {
         assert_eq!(wb.alt, "english", "Failed for variant: {en_variant}");
         assert!(wb.tooltip.contains("Tiếng Anh (Tắt Telex)"));
         assert!(wb.tooltip.contains("Chuột trái: Đổi sang Tiếng Việt"));
-        assert!(wb.tooltip.contains("Chuột phải: Mở Bảng điều khiển"));
     }
 }
 

@@ -3,6 +3,5 @@ members = [
     "crates/vietkeyra-engine",
     "crates/vietkeyra-daemon",
     "crates/vietkeyra-cli",
-    "crates/vietkeyra-gui",
 ]
 resolver = "2"

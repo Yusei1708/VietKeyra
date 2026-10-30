@@ -97,14 +97,14 @@ pub fn format_waybar(mode: &str) -> WaybarOutput {
         WaybarOutput {
             text: "VI".to_string(),
             alt: "vietnamese".to_string(),
-            tooltip: "VietKeyra: Tiếng Việt (Telex)\n• Chuột trái: Đổi sang Tiếng Anh\n• Chuột phải: Mở Bảng điều khiển".to_string(),
+            tooltip: "VietKeyra: Tiếng Việt (Telex)\n• Chuột trái: Đổi sang Tiếng Anh".to_string(),
             class: "vi".to_string(),
         }
     } else {
         WaybarOutput {
             text: "EN".to_string(),
             alt: "english".to_string(),
-            tooltip: "VietKeyra: Tiếng Anh (Tắt Telex)\n• Chuột trái: Đổi sang Tiếng Việt\n• Chuột phải: Mở Bảng điều khiển".to_string(),
+            tooltip: "VietKeyra: Tiếng Anh (Tắt Telex)\n• Chuột trái: Đổi sang Tiếng Việt".to_string(),
             class: "en".to_string(),
         }
     }
@@ -205,9 +205,16 @@ pub fn run(cli: Cli) -> Result<(), i32> {
         Commands::Waybar => {
             let resp = match send_command(&socket_path, "{\"cmd\": \"get_status\"}") {
                 Ok(r) => r,
-                Err(err) => {
-                    eprintln!("{err}");
-                    return Err(1);
+                Err(_) => {
+                    let waybar_obj = WaybarOutput {
+                        text: "--".to_string(),
+                        alt: "offline".to_string(),
+                        tooltip: "VietKeyra: Đang tắt (Nhấp chuột để khởi động)".to_string(),
+                        class: "offline".to_string(),
+                    };
+                    let json_line = serde_json::to_string(&waybar_obj).unwrap_or_default();
+                    println!("{json_line}");
+                    return Ok(());
                 }
             };
 

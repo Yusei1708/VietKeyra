@@ -34,7 +34,7 @@ impl SharedDaemonState {
     pub fn new() -> Self {
         Self {
             mode: RwLock::new(InputMode::Vietnamese),
-            style: RwLock::new(TonePlacementStyle::Modern),
+            style: RwLock::new(TonePlacementStyle::Traditional),
             version: "0.1.0",
             engine: "telex",
         }
