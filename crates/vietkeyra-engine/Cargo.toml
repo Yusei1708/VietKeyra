@@ -1,0 +1,10 @@
+[package]
+name = "vietkeyra-engine"
+version = "0.1.0"
+edition = "2021"
+authors = ["VietKeyra Team"]
+description = "Pure Rust, zero-dependency Vietnamese Telex IME core engine"
+
+[dependencies]
+
+[dev-dependencies]
