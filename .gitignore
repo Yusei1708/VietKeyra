@@ -1,0 +1,32 @@
+# Build artifacts
+/target/
+target/
+**/*.rs.bk
+
+# Credentials, tokens, keys & environment files
+*.token
+*.key
+*.pem
+*.secret
+.env*
+.env
+auth.json
+
+# Teamwork & Agent operational metadata (contains user prompts & tokens)
+.agents/
+ORIGINAL_REQUEST.md
+DISPATCH.md
+BRIEFING.md
+progress.md
+handoff.md
+
+# Logs and runtime sockets
+*.log
+*.sock
+
+# System & editor temporary files
+backups/
+*.bak
+*.swp
+*~
+.DS_Store
