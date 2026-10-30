@@ -1,0 +1,16 @@
+[package]
+name = "vietkeyra-gui"
+version = "0.1.0"
+edition = "2021"
+authors = ["VietKeyra Team"]
+description = "Bảng điều khiển giao diện đồ họa GTK4 cho VietKeyra"
+
+[dependencies]
+gtk4 = "0.9"
+glib = "0.20"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+libc = "0.2"
+
+[dev-dependencies]
+tempfile = "3.10"
