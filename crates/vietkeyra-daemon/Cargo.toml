@@ -1,0 +1,19 @@
+[package]
+name = "vietkeyra-daemon"
+version = "0.1.0"
+edition = "2021"
+authors = ["VietKeyra Team"]
+description = "Native Wayland Input Method Daemon and Unix Socket IPC Server for VietKeyra"
+
+[dependencies]
+vietkeyra-engine = { path = "../vietkeyra-engine" }
+wayland-client = "0.31"
+wayland-protocols-misc = { version = "0.3.12", features = ["client"] }
+xkbcommon = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+memmap2 = "0.9"
+libc = "0.2"
+
+[dev-dependencies]
+tempfile = "3.10"
