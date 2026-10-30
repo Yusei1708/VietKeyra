@@ -277,10 +277,17 @@ impl Dispatch<ZwpInputMethodKeyboardGrabV2, ()> for WaylandState {
                 // Map the anonymous file descriptor into memory for libxkbcommon
                 let mmap = unsafe { memmap2::MmapOptions::new().len(size as usize).map(&fd) };
                 if let Ok(mmap) = mmap {
-                    if let Ok(keymap_str) = std::str::from_utf8(&mmap) {
+                    // Wayland compositor keymap buffer usually includes a trailing null byte. Strip it.
+                    let slice = if mmap.last() == Some(&0) {
+                        &mmap[..mmap.len() - 1]
+                    } else {
+                        &mmap[..]
+                    };
+                    if let Ok(keymap_str) = std::str::from_utf8(slice) {
+                        let clean_str = keymap_str.trim_matches('\0');
                         if let Some(keymap) = xkb::Keymap::new_from_string(
                             &state.xkb_context,
-                            keymap_str.to_string(),
+                            clean_str.to_string(),
                             xkb::KEYMAP_FORMAT_TEXT_V1,
                             xkb::KEYMAP_COMPILE_NO_FLAGS,
                         ) {
