@@ -28,8 +28,8 @@ if [ -f "${WAYBAR_CONFIG_DIR}/UserModules" ]; then
 "custom/vietkeyra": {
     "format": "  {}",
     "return-type": "json",
-    "exec": "vietkeyra-ctl waybar",
-    "on-click": "vietkeyra-ctl toggle",
+    "exec": "$HOME/.local/bin/vietkeyra-ctl waybar",
+    "on-click": "$HOME/.local/bin/vietkeyra-ctl toggle",
     "restart-interval": 1,
     "signal": 8,
     "tooltip": true
@@ -54,16 +54,20 @@ if [ -f "${REAL_WAYBAR_STYLE}" ]; then
 
 /* VietKeyra Status Indicator */
 #custom-vietkeyra {
-    padding: 0 10px;
-    margin: 3px 2px;
-    border-radius: 6px;
-    font-weight: bold;
+	background: #0F1419;
+	border-radius: 50px 50px;
+	margin: 5px;
+	padding: 2px 15px;
+	font-weight: bold;
 }
 #custom-vietkeyra.vi {
-    color: #a6e3a1;
+	color: #39FF14;
 }
 #custom-vietkeyra.en {
-    color: #cdd6f4;
+	color: #B8CC52;
+}
+#custom-vietkeyra.offline {
+	color: #F07178;
 }
 EOF
     fi
